@@ -25,4 +25,5 @@ This project doesn't require any special software for running, just a modern web
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/yourusername/automatic-bass-drum-kick-generator.git
+   git clone https://github.com/fabriziosalmi/WebKick.git
+   ```
