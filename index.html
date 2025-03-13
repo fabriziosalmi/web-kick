@@ -1,24 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MadKick</title>
     <link rel="stylesheet" href="styles.css">
 </head>
+
 <body>
-    <div class="strobe-toggle-overlay">
-        <button id="strobeButton" class="strobe-toggle-button">
-            <span class="sr-only">Toggle Strobe</span>
-        </button>
-    </div>
     <div class="container">
-        <button id="playButton" class="button">Play</button>
-        <audio id="audioPlayer" loop>
-            <source src="kick_sample.mp3" type="audio/mp3">
+        <button id="playButton" class="button" aria-label="Play/Pause"></button>
+        <audio id="audioPlayer" loop preload="auto">
+            <source src="kick.mp3" type="audio/mp3">
             Your browser does not support the audio element.
         </audio>
     </div>
     <script src="script.js"></script>
 </body>
+
 </html>

@@ -1,69 +1,44 @@
 document.addEventListener('DOMContentLoaded', function () {
     const playButton = document.getElementById('playButton');
     const audioPlayer = document.getElementById('audioPlayer');
-    const strobeButton = document.getElementById('strobeButton');  // Get the strobe button
     let isPlaying = false;
     let audioContext;
     let source;
-    let isStrobeOn = true; // Initial strobe state
 
-    // Function to toggle the strobe effect
-    function toggleStrobe() {
-        if (isStrobeOn) {
-            document.body.classList.remove('strobe');
-        } else {
-            document.body.classList.add('strobe');
-        }
-        isStrobeOn = !isStrobeOn;
-    }
-
-    // Add event listener to the strobe button
-    strobeButton.addEventListener('click', toggleStrobe);
-
-    // Autoplay on load
-    function autoplayAudio() {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        source = audioContext.createMediaElementSource(audioPlayer);
-        applyAudioEffects();
-
-        audioPlayer.play()
-            .then(() => {
-                // Autoplay started!
-                isPlaying = true;
-                playButton.classList.add('green');
-                if (isStrobeOn) {  // Only add strobe if it's enabled
-                    document.body.classList.add('strobe'); // Add strobe class
-                }
-            })
-            .catch(error => {
-                // Autoplay was prevented. Show a UI element to let the user manually start playback.
-                console.error("Autoplay prevented:", error);
-                // Optionally, display a message on the page:
-                // playButton.textContent = "Click to Play";  // Change button text to indicate manual play
-            });
-    }
-
-    playButton.addEventListener('click', function () {
+    // Function to start audio and visual effects
+    function startEffects() {
         if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitContext)();
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
             source = audioContext.createMediaElementSource(audioPlayer);
             applyAudioEffects();
         }
 
-        if (isPlaying) {
-            audioPlayer.pause();
-            playButton.classList.remove('green');
-            document.body.classList.remove('strobe'); // Remove strobe class
-        } else {
-            audioPlayer.play();
-            playButton.classList.add('green');
-            if (isStrobeOn) { // Only add strobe if enabled
-                document.body.classList.add('strobe'); // Add strobe class
-            }
-        }
-        isPlaying = !isPlaying;
-    });
+        audioPlayer.play()
+            .then(() => {
+                isPlaying = true;
+                playButton.classList.add('green');
+            })
+            .catch(error => {
+                console.error("Playback failed:", error);
+                // Handle playback errors (e.g., user interaction required)
+            });
+    }
 
+    // Function to stop audio and visual effects
+    function stopEffects() {
+        audioPlayer.pause();
+        isPlaying = false;
+        playButton.classList.remove('green');
+    }
+
+    // Event listener for the play button
+    playButton.addEventListener('click', function () {
+        if (isPlaying) {
+            stopEffects();
+        } else {
+            startEffects();
+        }
+    });
 
     function applyAudioEffects() {
         const lowPassFilter = audioContext.createBiquadFilter();
@@ -93,7 +68,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
         const distortion = audioContext.createWaveShaper();
-        distortion.curve = makeDistortionCurve(400);
+        distortion.curve = makeDistortionCurve(100); // Keep distortion levels low.
         distortion.oversample = '4x';
 
         // Rhythmic Distortion Modulation
@@ -101,12 +76,12 @@ document.addEventListener('DOMContentLoaded', function () {
         let distortionCounter = 0;
         setInterval(() => {
             distortionCounter++;
-            let amount = 400;
+            let amount = 100;
 
             if (distortionCounter % 8 === 0) { // Every 8 beats, big distortion jump
-                amount = Math.random() * 800 + 200;
+                amount = Math.random() * 200 + 50;
             } else {
-                amount = 300 + Math.sin(distortionCounter * Math.PI) * 100; // Sine wave modulation
+                amount = 75 + Math.sin(distortionCounter * Math.PI) * 25; // Sine wave modulation
             }
             distortion.curve = makeDistortionCurve(amount);
         }, distortionInterval * 1000);
@@ -161,6 +136,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return curve;
     }
-
-    autoplayAudio();  // Call autoplay function on load
 });
