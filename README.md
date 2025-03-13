@@ -4,6 +4,8 @@ The Automatic Bass Drum Kick Generator is an innovative web application crafted 
 
 ## 🔈 [Kick it now!](https://fabriziosalmi.github.io/WebKick/)
 
+![screenshot](https://github.com/fabriziosalmi/web-kick/blob/main/screenshot.jpg?raw=true)
+
 ## Key Features
 
 - **Continuous Playback**: Runs indefinitely, ensuring there's always a beat to keep the energy up.
