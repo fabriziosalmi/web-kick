@@ -35,6 +35,19 @@ body, html {
   left: 50%;
   transform: translate(-50%, -50%); /* Center the container itself */
   z-index: 1;  /* Ensure the container (and button) are above the background */
+  /* Pulse Effect */
+  animation: pulse 0.353s infinite alternate; /* Add a pulse animation */
+}
+
+@keyframes pulse {
+    0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.05);
+        opacity: 1;
+    }
 }
 
 .button {
@@ -53,6 +66,17 @@ body, html {
   width: 80px; /* Fixed width to maintain circular shape */
   height: 80px; /* Fixed height to maintain circular shape */
   position: relative; /* Required for absolute positioning of the play icon */
+}
+
+/* smaller button ( for strobe one )*/
+.button.small{
+    width:120px;
+    height: 40px;
+    border-radius:12px;
+    font-size: 16px;
+    color: white;
+    padding: 10px;
+    background-color: grey;
 }
 
 .button:active, .button.green {

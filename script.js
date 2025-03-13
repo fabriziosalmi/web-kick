@@ -1,9 +1,25 @@
 document.addEventListener('DOMContentLoaded', function () {
     const playButton = document.getElementById('playButton');
     const audioPlayer = document.getElementById('audioPlayer');
+    const strobeButton = document.getElementById('strobeButton');  // Get the strobe button
     let isPlaying = false;
     let audioContext;
     let source;
+    let isStrobeOn = true; // Initial strobe state
+
+    // Function to toggle the strobe effect
+    function toggleStrobe() {
+        if (isStrobeOn) {
+            document.body.classList.remove('strobe');
+        } else {
+            document.body.classList.add('strobe');
+        }
+        isStrobeOn = !isStrobeOn;
+    }
+
+    // Add event listener to the strobe button
+    strobeButton.addEventListener('click', toggleStrobe);
+
 
     // Autoplay on load
     function autoplayAudio() {
@@ -16,7 +32,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Autoplay started!
                 isPlaying = true;
                 playButton.classList.add('green');
-                document.body.classList.add('strobe'); // Add strobe class
+                if (isStrobeOn) {  // Only add strobe if it's enabled
+                    document.body.classList.add('strobe'); // Add strobe class
+                }
             })
             .catch(error => {
                 // Autoplay was prevented. Show a UI element to let the user manually start playback.
@@ -41,7 +59,9 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             audioPlayer.play();
             playButton.classList.add('green');
-            document.body.classList.add('strobe'); // Add strobe class
+            if (isStrobeOn) { // Only add strobe if enabled
+                document.body.classList.add('strobe'); // Add strobe class
+            }
         }
         isPlaying = !isPlaying;
     });
