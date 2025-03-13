@@ -18,6 +18,13 @@ document.addEventListener('DOMContentLoaded', function () {
             applyAudioEffects();
         }
 
+        // Check and resume AudioContext if needed
+        if (audioContext.state === 'suspended') {
+            audioContext.resume().then(() => {
+                console.log('AudioContext resumed');
+            });
+        }
+
         // Apply reverb effect when starting
         if (isReverbLoaded) {
             applyReverbEffect();
@@ -47,6 +54,15 @@ document.addEventListener('DOMContentLoaded', function () {
         } else {
             startEffects();
         }
+
+        // Create AudioContext on first user interaction
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            source = audioContext.createMediaElementSource(audioPlayer);
+            applyAudioEffects();
+            loadReverb();
+        }
+        startEffects();
     });
 
     function applyAudioEffects() {
@@ -124,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const feedback = audioContext.createGain();
         feedback.gain.setValueAtTime(Math.random() * 0.5, audioContext.currentTime);
         delay.connect(feedback);
-        feedback.connect(delay);
+        delay.connect(delay);
 
         // Flanger setup
         flanger = audioContext.createDelay();
@@ -230,6 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
         var request = new XMLHttpRequest();
         request.open('GET', 'https://mdn.github.io/webaudio-examples/audio-api/convolver/impulse-responses/hm2_livingroom.wav', true);
         request.responseType = 'arraybuffer';
+        request.setRequestHeader('Content-Type', 'audio/wav');
 
         request.onload = function () {
             audioContext.decodeAudioData(request.response, function (buffer) {
@@ -241,8 +258,4 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         request.send();
     }
-
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    loadReverb();
-    startEffects(); // Autoplay after reverb is loaded
 });
