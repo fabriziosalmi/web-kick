@@ -60,10 +60,16 @@ document.addEventListener('DOMContentLoaded', function () {
             let frequency = 5000;
             let Q = 1;
 
-            if (lowPassCounter % 4 === 0) { // Every 4 beats, do something dramatic
-                frequency = Math.random() * 3000 + 1000; // Sweep down
-                Q = Math.random() * 5 + 1;
-            } else {
+            // Emphasize downbeats
+            if (lowPassCounter % 4 === 1) {
+                // Stronger downbeat effect
+                frequency = Math.random() * 2500 + 500;  // wider range, lower frequencies
+                Q = Math.random() * 6 + 2;    // High Resonance
+            } else if (lowPassCounter % 2 === 1) { // On the other beats
+                frequency = Math.random() * 1500 + 2500;
+                Q = Math.random() * 3 + 1;
+            }
+            else {
                 frequency = 4000 + Math.sin(lowPassCounter * Math.PI / 2) * 1000; // Subtle wobble
                 Q = 1 + Math.cos(lowPassCounter * Math.PI / 2) * 2;
             }
@@ -84,9 +90,14 @@ document.addEventListener('DOMContentLoaded', function () {
             distortionCounter++;
             let amount = 100;
 
-            if (distortionCounter % 8 === 0) { // Every 8 beats, big distortion jump
-                amount = Math.random() * 200 + 50;
-            } else {
+            // Increase distortion on downbeat
+            if (distortionCounter % 4 === 1) {
+                amount = Math.random() * 300 + 100; // Stronger distortion
+            }
+            else if (distortionCounter % 2 === 1){
+                 amount = Math.random() * 150 + 50;
+            }
+            else {
                 amount = 75 + Math.sin(distortionCounter * Math.PI) * 25; // Sine wave modulation
             }
             distortion.curve = makeDistortionCurve(amount);
