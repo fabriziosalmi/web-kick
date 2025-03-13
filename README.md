@@ -2,7 +2,7 @@
 
 The Automatic Bass Drum Kick Generator is an innovative web application crafted with HTML, CSS, and JavaScript, designed to endlessly generate bass drum kicks at 170 BPM with slight variations. This tool serves as a dynamic resource for music producers, DJs, and electronic music enthusiasts seeking to infuse their tracks or live performances with a consistent yet evolving rhythm section.
 
-## 🔈 [Kick it now!](https://fabriziosalmi.github.io/WebKick/)
+## 🔈 [Kick it now!](https://fabriziosalmi.github.io/web-kick/)
 
 ![screenshot](https://github.com/fabriziosalmi/web-kick/blob/main/screenshot.jpg?raw=true)
 
@@ -30,7 +30,7 @@ This project doesn't require any special software for running, just a modern web
 
 1. Clone the repo
    ```sh
-   git clone https://github.com/fabriziosalmi/WebKick.git
+   git clone https://github.com/fabriziosalmi/web-kick.git
    ```
 
 ## ⚠️ Important Notes
