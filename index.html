@@ -7,8 +7,12 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <div class="strobe-toggle-overlay">
+        <button id="strobeButton" class="strobe-toggle-button">
+            <span class="sr-only">Toggle Strobe</span>
+        </button>
+    </div>
     <div class="container">
-        <button id="strobeButton" class="button small">Strobe On/Off</button>
         <button id="playButton" class="button">Play</button>
         <audio id="audioPlayer" loop>
             <source src="kick_sample.mp3" type="audio/mp3">

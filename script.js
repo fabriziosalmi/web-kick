@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add event listener to the strobe button
     strobeButton.addEventListener('click', toggleStrobe);
 
-
     // Autoplay on load
     function autoplayAudio() {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -44,10 +43,9 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-
     playButton.addEventListener('click', function () {
         if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext = new (window.AudioContext || window.webkitContext)();
             source = audioContext.createMediaElementSource(audioPlayer);
             applyAudioEffects();
         }
@@ -92,7 +90,6 @@ document.addEventListener('DOMContentLoaded', function () {
             lowPassFilter.frequency.setValueAtTime(frequency, audioContext.currentTime);
             lowPassFilter.Q.setValueAtTime(Q, audioContext.currentTime);
         }, lowPassInterval * 1000); // Convert to milliseconds
-
 
 
         const distortion = audioContext.createWaveShaper();
