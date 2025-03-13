@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let isPlaying = false;
     let audioContext;
     let source;
+    let reverb;
 
     // Function to start audio and visual effects
     function startEffects() {
@@ -13,14 +14,16 @@ document.addEventListener('DOMContentLoaded', function () {
             applyAudioEffects();
         }
 
+        // Apply reverb effect when starting
+        applyReverbEffect();
+
         audioPlayer.play()
             .then(() => {
                 isPlaying = true;
-                playButton.classList.add('green');
+                playButton.classList.add('playing'); // Changed from 'green' to 'playing'
             })
             .catch(error => {
                 console.error("Playback failed:", error);
-                // Handle playback errors (e.g., user interaction required)
             });
     }
 
@@ -28,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function stopEffects() {
         audioPlayer.pause();
         isPlaying = false;
-        playButton.classList.remove('green');
+        playButton.classList.remove('playing'); // Changed from 'green' to 'playing'
     }
 
     // Event listener for the play button
@@ -108,19 +111,24 @@ document.addEventListener('DOMContentLoaded', function () {
         delay.connect(feedback);
         feedback.connect(delay);
 
-        const compressor = audioContext.createDynamicsCompressor();
-        compressor.threshold.setValueAtTime(-24, audioContext.currentTime);
-        compressor.knee.setValueAtTime(30, audioContext.currentTime);
-        compressor.ratio.setValueAtTime(12, audioContext.currentTime);
-        compressor.attack.setValueAtTime(0.003, audioContext.currentTime);
-        compressor.release.setValueAtTime(0.25, audioContext.currentTime);
-
+        // Connect nodes
         source.connect(lowPassFilter);
         lowPassFilter.connect(distortion);
         distortion.connect(lowShelfEQ);
         lowShelfEQ.connect(delay);
-        delay.connect(compressor);
-        compressor.connect(audioContext.destination);
+        delay.connect(audioContext.destination);
+    }
+
+    // Reverb effect code
+    function applyReverbEffect() {
+        if (!reverb) {
+            audioContext.decodeAudioData(reverbBuffer, function (buffer) {
+                reverb = audioContext.createConvolver();
+                reverb.buffer = buffer;
+                source.connect(reverb);
+                reverb.connect(audioContext.destination);
+            }, function (e) { console.log("Error decoding reverb data" + e); });
+        }
     }
 
     function makeDistortionCurve(amount) {
@@ -136,4 +144,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return curve;
     }
+
+
+    var reverbBuffer;
+
+    function loadReverb() {
+        var request = new XMLHttpRequest();
+        request.open('GET', 'https://mdn.github.io/webaudio-examples/audio-api/convolver/impulse-responses/hm2_livingroom.wav', true);
+        request.responseType = 'arraybuffer';
+
+        request.onload = function () {
+            audioContext.decodeAudioData(request.response, function (buffer) {
+                reverbBuffer = buffer;
+            }, function (e) { console.log("Error decoding file" + e); });
+        }
+        request.send();
+    }
+
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    loadReverb();
 });
