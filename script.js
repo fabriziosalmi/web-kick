@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', function () {
     let source;
     let reverb;
     let isReverbLoaded = false; // Track reverb loading status
+    let flanger, phaser;
+    let isFlangerEnabled = false, isPhaserEnabled = false;
+    let bandPassFilter; // Add Bandpass Filter
 
     // Function to start audio and visual effects
     function startEffects() {
@@ -19,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isReverbLoaded) {
             applyReverbEffect();
         }
-        //console.log(isPlaying);
+
         audioPlayer.play()
             .then(() => {
                 isPlaying = true;
@@ -76,11 +79,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             lowPassFilter.frequency.setValueAtTime(frequency, audioContext.currentTime);
             lowPassFilter.Q.setValueAtTime(Q, audioContext.currentTime);
-        }, lowPassInterval * 1000); // Convert to milliseconds
-
+        }, lowPassInterval * 1000);
 
         const distortion = audioContext.createWaveShaper();
-        distortion.curve = makeDistortionCurve(100); // Keep distortion levels low.
+        distortion.curve = makeDistortionCurve(400); // Increased default distortion
         distortion.oversample = '4x';
 
         // Rhythmic Distortion Modulation
@@ -88,21 +90,20 @@ document.addEventListener('DOMContentLoaded', function () {
         let distortionCounter = 0;
         setInterval(() => {
             distortionCounter++;
-            let amount = 100;
+            let amount = 400;
 
             // Increase distortion on downbeat
             if (distortionCounter % 4 === 1) {
-                amount = Math.random() * 300 + 100; // Stronger distortion
+                amount = Math.random() * 600 + 200; // More extreme distortion
             }
-            else if (distortionCounter % 2 === 1){
-                 amount = Math.random() * 150 + 50;
+            else if (distortionCounter % 2 === 1) {
+                amount = Math.random() * 300 + 100; // Medium
             }
             else {
-                amount = 75 + Math.sin(distortionCounter * Math.PI) * 25; // Sine wave modulation
+                amount = 200 + Math.sin(distortionCounter * Math.PI) * 100; // Sine wave modulation
             }
             distortion.curve = makeDistortionCurve(amount);
         }, distortionInterval * 1000);
-
 
         const lowShelfEQ = audioContext.createBiquadFilter();
         lowShelfEQ.type = 'lowshelf';
@@ -125,12 +126,79 @@ document.addEventListener('DOMContentLoaded', function () {
         delay.connect(feedback);
         feedback.connect(delay);
 
+        // Flanger setup
+        flanger = audioContext.createDelay();
+        flanger.delayTime.value = 0.005; // Initial delay
+        const flangerLFO = audioContext.createOscillator();
+        flangerLFO.type = 'sine';
+        flangerLFO.frequency.value = 0.5; // LFO speed
+        const flangerGain = audioContext.createGain();
+        flangerGain.gain.value = 0.002; // LFO depth
+        flangerLFO.connect(flangerGain);
+        flangerGain.connect(flanger.delayTime);
+        flangerLFO.start();
+
+        // Phaser setup (using a BiquadFilter)
+        phaser = audioContext.createBiquadFilter();
+        phaser.type = 'allpass';
+        phaser.frequency.value = 500; // Initial phaser frequency
+        const phaserLFO = audioContext.createOscillator();
+        phaserLFO.type = 'sine';
+        phaserLFO.frequency.value = 0.3; // LFO speed
+        const phaserGain = audioContext.createGain();
+        phaserGain.gain.value = 400; // LFO depth
+        phaserLFO.connect(phaserGain);
+        phaserGain.connect(phaser.frequency);
+        phaserLFO.start();
+
+        // Bandpass filter setup
+        bandPassFilter = audioContext.createBiquadFilter();
+        bandPassFilter.type = 'bandpass';
+        bandPassFilter.frequency.value = 1000; // Initial frequency
+        bandPassFilter.Q.value = 2; // Initial Q
+
+        // 170BPM Interval
+        const interval = 60 / 170 * 1000;
+
+        setInterval(() => {
+            // Randomly engage or disengage flanger and phaser
+            if (Math.random() < 0.05) { // 5% chance for flanger/phaser
+                isFlangerEnabled = !isFlangerEnabled;
+            }
+            if (Math.random() < 0.05) {
+                isPhaserEnabled = !isPhaserEnabled;
+            }
+            // 5% chance for engaging bandpass
+            if (Math.random() < 0.05) { // rare
+                bandPassFilter.frequency.setValueAtTime(Math.random() * 2000 + 500, audioContext.currentTime); // Random cutoff
+                bandPassFilter.Q.setValueAtTime(Math.random() * 4 + 1, audioContext.currentTime); // Moderate resonance
+            } else {
+                bandPassFilter.frequency.setValueAtTime(1000, audioContext.currentTime); // Reset bandpass
+                bandPassFilter.Q.setValueAtTime(2, audioContext.currentTime);
+            }
+        }, interval);
+
         // Connect nodes
-        source.connect(lowPassFilter);
-        lowPassFilter.connect(distortion);
-        distortion.connect(lowShelfEQ);
-        lowShelfEQ.connect(delay);
-        delay.connect(audioContext.destination);
+
+        let currentSource = source;
+
+        currentSource = source.connect(lowPassFilter);
+        currentSource = lowPassFilter.connect(distortion);
+        currentSource = distortion.connect(lowShelfEQ);
+        currentSource = lowShelfEQ.connect(delay);
+
+        //Conditionally connect flanger/phaser
+        currentSource = delay.connect(bandPassFilter);
+
+        if (isFlangerEnabled) {
+            bandPassFilter.connect(flanger);
+            flanger.connect(audioContext.destination);
+        }
+        if (isPhaserEnabled) {
+            bandPassFilter.connect(phaser);
+            phaser.connect(audioContext.destination);
+        }
+        bandPassFilter.connect(audioContext.destination);
     }
 
     // Reverb effect code
@@ -169,7 +237,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 reverb = audioContext.createConvolver();
                 reverb.buffer = buffer;
                 isReverbLoaded = true; // Flag reverb as loaded
-                //console.log(reverb);
             }, function (e) { console.log("Error decoding file" + e); });
         }
         request.send();
