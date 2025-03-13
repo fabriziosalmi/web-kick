@@ -5,6 +5,27 @@ body, html {
   justify-content: center;
   align-items: center;
   background-color: #f0f0f0;
+  background-image: url("kick.jpeg"); /* Add the background image */
+  background-size: cover; /* Cover the entire background */
+  background-repeat: no-repeat; /* Prevent image repeating */
+  background-position: center center; /* Center the image */
+  overflow:hidden; /* Avoid exceeding body limits with strobe */
+}
+
+.strobe {
+    animation: strobe 0.353s infinite;  /* Calculate duration for 170 BPM (60/170) */
+}
+
+@keyframes strobe {
+    0% {
+        background-color: rgba(255, 255, 255, 0); /* Initial transparent color */
+    }
+    50% {
+        background-color: rgba(255, 255, 255, 1); /* Peak white */
+    }
+    100% {
+        background-color: rgba(255, 255, 255, 0); /* Return to transparent */
+    }
 }
 
 .container {
@@ -29,4 +50,3 @@ body, html {
 .button:active, .button.green {
   background-color: green;
 }
-

@@ -5,6 +5,28 @@ document.addEventListener('DOMContentLoaded', function () {
     let audioContext;
     let source;
 
+    // Autoplay on load
+    function autoplayAudio() {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        source = audioContext.createMediaElementSource(audioPlayer);
+        applyAudioEffects();
+
+        audioPlayer.play()
+            .then(() => {
+                // Autoplay started!
+                isPlaying = true;
+                playButton.classList.add('green');
+                document.body.classList.add('strobe'); // Add strobe class
+            })
+            .catch(error => {
+                // Autoplay was prevented. Show a UI element to let the user manually start playback.
+                console.error("Autoplay prevented:", error);
+                // Optionally, display a message on the page:
+                // playButton.textContent = "Click to Play";  // Change button text to indicate manual play
+            });
+    }
+
+
     playButton.addEventListener('click', function () {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -15,12 +37,15 @@ document.addEventListener('DOMContentLoaded', function () {
         if (isPlaying) {
             audioPlayer.pause();
             playButton.classList.remove('green');
+            document.body.classList.remove('strobe'); // Remove strobe class
         } else {
             audioPlayer.play();
             playButton.classList.add('green');
+            document.body.classList.add('strobe'); // Add strobe class
         }
         isPlaying = !isPlaying;
     });
+
 
     function applyAudioEffects() {
         const lowPassFilter = audioContext.createBiquadFilter();
@@ -88,5 +113,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         return curve;
     }
-});
 
+    autoplayAudio();  // Call autoplay function on load
+});
