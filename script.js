@@ -53,25 +53,56 @@ document.addEventListener('DOMContentLoaded', function () {
         lowPassFilter.frequency.setValueAtTime(5000, audioContext.currentTime);
         lowPassFilter.Q.setValueAtTime(1, audioContext.currentTime);
 
+        // Rhythmic LowPass Filter Modulation
+        const lowPassInterval = 60 / 170; // Beat length in seconds at 170 BPM
+        let lowPassCounter = 0;
         setInterval(() => {
-            lowPassFilter.frequency.setValueAtTime(Math.random() * 5000 + 500, audioContext.currentTime);
-            lowPassFilter.Q.setValueAtTime(Math.random() * 10, audioContext.currentTime);
-        }, 1000);
+            lowPassCounter++;
+            let frequency = 5000;
+            let Q = 1;
+
+            if (lowPassCounter % 4 === 0) { // Every 4 beats, do something dramatic
+                frequency = Math.random() * 3000 + 1000; // Sweep down
+                Q = Math.random() * 5 + 1;
+            } else {
+                frequency = 4000 + Math.sin(lowPassCounter * Math.PI / 2) * 1000; // Subtle wobble
+                Q = 1 + Math.cos(lowPassCounter * Math.PI / 2) * 2;
+            }
+
+            lowPassFilter.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            lowPassFilter.Q.setValueAtTime(Q, audioContext.currentTime);
+        }, lowPassInterval * 1000); // Convert to milliseconds
+
+
 
         const distortion = audioContext.createWaveShaper();
         distortion.curve = makeDistortionCurve(400);
         distortion.oversample = '4x';
 
+        // Rhythmic Distortion Modulation
+        const distortionInterval = lowPassInterval;
+        let distortionCounter = 0;
         setInterval(() => {
-            distortion.curve = makeDistortionCurve(Math.random() * 1000);
-        }, 1000);
+            distortionCounter++;
+            let amount = 400;
+
+            if (distortionCounter % 8 === 0) { // Every 8 beats, big distortion jump
+                amount = Math.random() * 800 + 200;
+            } else {
+                amount = 300 + Math.sin(distortionCounter * Math.PI) * 100; // Sine wave modulation
+            }
+            distortion.curve = makeDistortionCurve(amount);
+        }, distortionInterval * 1000);
+
 
         const lowShelfEQ = audioContext.createBiquadFilter();
         lowShelfEQ.type = 'lowshelf';
         lowShelfEQ.frequency.setValueAtTime(250, audioContext.currentTime);
+
+        // LFO for Low Shelf EQ
         const lfo = audioContext.createOscillator();
         lfo.type = 'sine';
-        lfo.frequency.setValueAtTime(1, audioContext.currentTime);
+        lfo.frequency.setValueAtTime(2, audioContext.currentTime); // Faster LFO
         const lfoGain = audioContext.createGain();
         lfoGain.gain.setValueAtTime(5, audioContext.currentTime);
         lfo.connect(lfoGain);
