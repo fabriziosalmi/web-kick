@@ -6,7 +6,8 @@ html {
     justify-content: center;
     align-items: center;
     background-color: #f0f0f0;
-    background-image: url("kick.jpeg");
+    /* PRELOAD */
+    background-image: url("kick.jpeg"); /* Ensure the path is correct */
     background-size: cover;
     background-repeat: no-repeat;
     background-position: center center;
