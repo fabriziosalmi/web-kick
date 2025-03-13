@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     let audioContext;
     let source;
     let reverb;
+    let isReverbLoaded = false; // Track reverb loading status
 
     // Function to start audio and visual effects
     function startEffects() {
@@ -15,8 +16,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         // Apply reverb effect when starting
-        applyReverbEffect();
-
+        if (isReverbLoaded) {
+            applyReverbEffect();
+        }
+        //console.log(isPlaying);
         audioPlayer.play()
             .then(() => {
                 isPlaying = true;
@@ -121,13 +124,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Reverb effect code
     function applyReverbEffect() {
-        if (!reverb) {
-            audioContext.decodeAudioData(reverbBuffer, function (buffer) {
-                reverb = audioContext.createConvolver();
-                reverb.buffer = buffer;
-                source.connect(reverb);
-                reverb.connect(audioContext.destination);
-            }, function (e) { console.log("Error decoding reverb data" + e); });
+        if (reverb) {
+            source.connect(reverb);
+            reverb.connect(audioContext.destination);
         }
     }
 
@@ -156,6 +155,10 @@ document.addEventListener('DOMContentLoaded', function () {
         request.onload = function () {
             audioContext.decodeAudioData(request.response, function (buffer) {
                 reverbBuffer = buffer;
+                reverb = audioContext.createConvolver();
+                reverb.buffer = buffer;
+                isReverbLoaded = true; // Flag reverb as loaded
+                //console.log(reverb);
             }, function (e) { console.log("Error decoding file" + e); });
         }
         request.send();
@@ -163,4 +166,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
     audioContext = new (window.AudioContext || window.webkitAudioContext)();
     loadReverb();
+    startEffects(); // Autoplay after reverb is loaded
 });
