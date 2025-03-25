@@ -9,7 +9,7 @@ The Automatic Bass Drum Kick Generator is an innovative web application crafted 
 ## Key Features
 
 - **Continuous Playback**: Runs indefinitely, ensuring there's always a beat to keep the energy up.
-- **170 BPM Fixed Tempo**: Perfectly set for genres like Drum and Bass, ensuring a fast-paced rhythm.
+- **170 BPM Fixed Tempo**: Perfectly set for genres like FreeTekno, ensuring a fast-paced rhythm.
 - **Slight Variations**: Each kick introduces subtle changes, preventing the output from becoming monotonous.
 - **Strobe Effect:** Visual strobe effect synced to the beat for enhanced experience (can be intense).
 - **Customizable Audio Effects:** Includes a range of audio effects such as distortion, low pass filter, and delay for a unique sound.
