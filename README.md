@@ -32,4 +32,4 @@ This project doesn't require any special software for running, just a modern web
    git clone https://github.com/fabriziosalmi/web-kick.git
    ```
 
-2. Enter in the repo folder and open the `docs/index.html` file with your web browser.
+2. Enter in the repo folder and open the `index.html` file with your web browser.
