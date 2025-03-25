@@ -32,9 +32,4 @@ This project doesn't require any special software for running, just a modern web
    git clone https://github.com/fabriziosalmi/web-kick.git
    ```
 
-## ⚠️ Important Notes
-
-*   **Browser Autoplay Policies:** Be aware of browser autoplay policies.  Many browsers block autoplay with sound until the user has interacted with the page. The application includes basic error handling for this, but the UI may need adjustments.
-*   **User Experience:** The rapidly flashing strobe effect can be overwhelming.  Consider providing a setting to disable the strobe or reduce its intensity in a future update.
-*   **Accessibility:** Strobe effects can be dangerous for people with photosensitive epilepsy.  In a future update, provide a clear and easily accessible way to disable the strobe.
-*   **Performance:** While CSS animations are generally performant, extremely fast or complex animations *can* impact performance, especially on older devices.
+2. Enter in the repo folder and open the `docs/index.html` file with your web browser.
