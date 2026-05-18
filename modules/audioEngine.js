@@ -1,7 +1,9 @@
 /**
  * AudioEngine Module
- * Gestisce l'inizializzazione e il controllo del contesto audio Web Audio API
- * Responsabile della creazione e gestione del source audio principale
+ * Manages Web Audio API context, source, and dual AnalyserNodes
+ * 
+ * Provides raw audio nodes — analysis is handled by AudioAnalysis module.
+ * AnalyserNode config optimized for low-latency kick drum response.
  */
 
 export class AudioEngine {
@@ -10,96 +12,77 @@ export class AudioEngine {
         this.source = null;
         this.audioElement = null;
         this.isInitialized = false;
+        
+        this.analyser = null;
+        this.analyserWaveform = null;
+        this.fftSize = 2048;
     }
 
     /**
-     * Inizializza il contesto audio e crea il source dall'elemento audio HTML
-     * @param {HTMLAudioElement} audioElement - L'elemento audio HTML
-     * @returns {Promise<void>}
+     * Initialize audio context and create source from HTML audio element
      */
     async initialize(audioElement) {
         try {
-            // Crea il contesto audio con compatibilità cross-browser
             this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
             this.audioElement = audioElement;
             
-            // Crea il source dal media element per collegarlo alla catena di effetti
             this.source = this.audioContext.createMediaElementSource(audioElement);
             
+            // Frequency analyser — low smoothing for fast transient response
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = this.fftSize;
+            this.analyser.smoothingTimeConstant = 0.4;
+            this.analyser.minDecibels = -80;
+            this.analyser.maxDecibels = -10;
+            
+            // Waveform analyser — even lower smoothing
+            this.analyserWaveform = this.audioContext.createAnalyser();
+            this.analyserWaveform.fftSize = this.fftSize;
+            this.analyserWaveform.smoothingTimeConstant = 0.2;
+            
             this.isInitialized = true;
-            console.log('AudioEngine inizializzato con successo');
+            console.log('AudioEngine initialized');
         } catch (error) {
-            console.error('Errore nell\'inizializzazione dell\'AudioEngine:', error);
+            console.error('AudioEngine init error:', error);
             throw error;
         }
     }
 
-    /**
-     * Riprende il contesto audio se è in stato sospeso (richiesto da alcuni browser)
-     * @returns {Promise<void>}
-     */
     async resumeContext() {
         if (this.audioContext && this.audioContext.state === 'suspended') {
             await this.audioContext.resume();
         }
     }
 
-    /**
-     * Avvia la riproduzione dell'audio
-     * @returns {Promise<void>}
-     */
     async play() {
-        if (!this.isInitialized) {
-            throw new Error('AudioEngine non inizializzato');
-        }
-        
+        if (!this.isInitialized) throw new Error('AudioEngine not initialized');
         await this.resumeContext();
         await this.audioElement.play();
     }
 
-    /**
-     * Mette in pausa la riproduzione dell'audio
-     */
     pause() {
-        if (this.audioElement) {
-            this.audioElement.pause();
-        }
+        if (this.audioElement) this.audioElement.pause();
     }
 
-    /**
-     * Ottiene il contesto audio corrente
-     * @returns {AudioContext|null}
-     */
-    getContext() {
-        return this.audioContext;
+    getContext() { return this.audioContext; }
+    getSource() { return this.source; }
+    
+    getAnalysers() {
+        return {
+            frequency: this.analyser,
+            waveform: this.analyserWaveform
+        };
     }
 
-    /**
-     * Ottiene il source audio per collegarlo agli effetti
-     * @returns {MediaElementAudioSourceNode|null}
-     */
-    getSource() {
-        return this.source;
-    }
+    isReady() { return this.isInitialized; }
 
-    /**
-     * Verifica se l'engine è inizializzato
-     * @returns {boolean}
-     */
-    isReady() {
-        return this.isInitialized;
-    }
-
-    /**
-     * Pulisce le risorse e chiude il contesto audio
-     */
     dispose() {
-        if (this.audioContext) {
-            this.audioContext.close();
-        }
+        if (this.audioContext) this.audioContext.close();
         this.audioContext = null;
         this.source = null;
         this.audioElement = null;
+        this.analyser = null;
+        this.analyserWaveform = null;
         this.isInitialized = false;
     }
 }

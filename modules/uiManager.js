@@ -10,6 +10,15 @@ export class UIManager {
         this.isPlaying = false;
         this.onPlayCallback = null;
         this.onPauseCallback = null;
+        
+        // HUD elements
+        this.hudFreq = null;
+        this.hudBpm = null;
+        this.hudRms = null;
+        this.spectrumBar = null;
+        this.hudTop = null;
+        this.hudBottom = null;
+        this.startScreen = null;
     }
 
     /**
@@ -19,8 +28,17 @@ export class UIManager {
      */
     initialize(playButton) {
         this.playButton = playButton;
+        
+        // HUD refs
+        this.hudFreq = document.getElementById('hud-freq');
+        this.hudBpm = document.getElementById('hud-bpm');
+        this.hudRms = document.getElementById('hud-rms');
+        this.spectrumBar = document.getElementById('spectrumBar');
+        this.hudTop = document.getElementById('hud-top');
+        this.hudBottom = document.getElementById('hud-bottom');
+        this.startScreen = document.getElementById('startScreen');
+        
         this.setupEventListeners();
-        this.updateButtonState();
     }
 
     /**
@@ -46,14 +64,13 @@ export class UIManager {
                 this.togglePlayPause();
             }
         });
-
-        // Event listener per hover effects (opzionale per migliorare UX)
-        this.playButton.addEventListener('mouseenter', () => {
-            this.playButton.style.transform = 'scale(1.05)';
-        });
-
-        this.playButton.addEventListener('mouseleave', () => {
-            this.playButton.style.transform = 'scale(1)';
+        
+        // Global spacebar toggle (when not focused on button)
+        document.addEventListener('keydown', (event) => {
+            if (event.key === ' ' && event.target === document.body) {
+                event.preventDefault();
+                this.togglePlayPause();
+            }
         });
     }
 
@@ -64,10 +81,8 @@ export class UIManager {
     async togglePlayPause() {
         try {
             if (this.isPlaying) {
-                // Passa da playing a paused
                 await this.pause();
             } else {
-                // Passa da paused a playing
                 await this.play();
             }
         } catch (error) {
@@ -78,57 +93,69 @@ export class UIManager {
 
     /**
      * Avvia la riproduzione
-     * Aggiorna lo stato e chiama il callback di play se definito
      */
     async play() {
-        // Chiama il callback di play se definito
         if (this.onPlayCallback) {
             await this.onPlayCallback();
         }
 
-        // Aggiorna lo stato interno e visuale
         this.isPlaying = true;
-        this.updateButtonState();
-        
+        this.updateVisualState();
         console.log('Riproduzione avviata');
     }
 
     /**
      * Mette in pausa la riproduzione
-     * Aggiorna lo stato e chiama il callback di pause se definito
      */
     async pause() {
-        // Chiama il callback di pause se definito
         if (this.onPauseCallback) {
             await this.onPauseCallback();
         }
 
-        // Aggiorna lo stato interno e visuale
         this.isPlaying = false;
-        this.updateButtonState();
-        
+        this.updateVisualState();
         console.log('Riproduzione messa in pausa');
     }
 
     /**
-     * Aggiorna lo stato visuale del pulsante in base allo stato di riproduzione
-     * Gestisce le classi CSS e gli attributi di accessibilità
+     * Update all visual states based on play/pause
      */
-    updateButtonState() {
+    updateVisualState() {
         if (!this.playButton) return;
 
         if (this.isPlaying) {
-            // Stato playing: pulsante attivo con indicatore visuale
             this.playButton.classList.add('playing');
-            this.playButton.classList.remove('paused');
             this.playButton.setAttribute('aria-label', 'Pause');
-            this.playButton.setAttribute('title', 'Clicca per mettere in pausa');
+            
+            // Hide start screen, show HUD
+            if (this.startScreen) this.startScreen.classList.add('hidden');
+            if (this.hudTop) this.hudTop.classList.add('visible');
+            if (this.hudBottom) this.hudBottom.classList.add('visible');
         } else {
-            // Stato paused: pulsante inattivo
             this.playButton.classList.remove('playing');
-            this.playButton.classList.add('paused');
             this.playButton.setAttribute('aria-label', 'Play');
-            this.playButton.setAttribute('title', 'Clicca per avviare la riproduzione');
+            
+            // Show start screen, hide HUD
+            if (this.startScreen) this.startScreen.classList.remove('hidden');
+            if (this.hudTop) this.hudTop.classList.remove('visible');
+            if (this.hudBottom) this.hudBottom.classList.remove('visible');
+        }
+    }
+
+    /**
+     * Update HUD with real-time audio data
+     */
+    updateHUD(audioData) {
+        if (!audioData) return;
+        
+        if (this.hudFreq) {
+            this.hudFreq.textContent = audioData.dominantFreq + ' Hz';
+        }
+        if (this.hudRms) {
+            this.hudRms.textContent = audioData.rms.toFixed(3);
+        }
+        if (this.spectrumBar) {
+            this.spectrumBar.style.transform = `scaleX(${Math.min(1, audioData.rms * 3)})`;
         }
     }
 
@@ -153,7 +180,6 @@ export class UIManager {
      * @param {string} message - Messaggio di errore da mostrare
      */
     showError(message) {
-        // Crea un elemento di notifica per l'errore
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-notification';
         errorDiv.textContent = message;
@@ -162,18 +188,20 @@ export class UIManager {
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #ff4444;
+            background: rgba(255, 34, 68, 0.9);
             color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 12px 24px;
+            border-radius: 8px;
             z-index: 1000;
-            font-family: Arial, sans-serif;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 34, 68, 0.3);
+            box-shadow: 0 4px 20px rgba(255, 34, 68, 0.3);
         `;
 
         document.body.appendChild(errorDiv);
 
-        // Rimuove la notifica dopo 3 secondi
         setTimeout(() => {
             if (errorDiv.parentNode) {
                 errorDiv.parentNode.removeChild(errorDiv);
@@ -183,17 +211,16 @@ export class UIManager {
 
     /**
      * Forza un aggiornamento dello stato del pulsante
-     * Utile per sincronizzare l'UI con stati esterni
      * @param {boolean} playing - Stato di riproduzione da impostare
      */
     setPlayingState(playing) {
         this.isPlaying = playing;
-        this.updateButtonState();
+        this.updateVisualState();
     }
 
     /**
      * Ottiene lo stato corrente di riproduzione
-     * @returns {boolean} - True se in riproduzione, false se in pausa
+     * @returns {boolean}
      */
     getPlayingState() {
         return this.isPlaying;
@@ -201,7 +228,7 @@ export class UIManager {
 
     /**
      * Abilita o disabilita il pulsante
-     * @param {boolean} enabled - True per abilitare, false per disabilitare
+     * @param {boolean} enabled
      */
     setButtonEnabled(enabled) {
         if (!this.playButton) return;
@@ -213,11 +240,9 @@ export class UIManager {
 
     /**
      * Pulisce tutti gli event listeners e riferimenti
-     * Importante per evitare memory leaks
      */
     dispose() {
         if (this.playButton) {
-            // Rimuove tutti gli event listeners clonando il nodo
             const newButton = this.playButton.cloneNode(true);
             this.playButton.parentNode.replaceChild(newButton, this.playButton);
         }

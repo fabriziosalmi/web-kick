@@ -9,6 +9,9 @@ export class AudioEffects {
         this.audioContext = audioContext;
         this.effectsChain = [];
         this.modulationIntervals = [];
+        // Pre-allocate distortion curve buffer (reused)
+        this._curveSamples = 4096;
+        this._curveBuffer = new Float32Array(this._curveSamples);
     }
 
     /**
@@ -166,19 +169,15 @@ export class AudioEffects {
      * @returns {Float32Array} - Array contenente la curva di distorsione
      */
     makeDistortionCurve(amount) {
-        const k = amount; // Fattore di distorsione
-        const nSamples = 44100; // Numero di campioni per la curva (sample rate standard)
-        const curve = new Float32Array(nSamples);
-        const deg = Math.PI / 180; // Conversione gradi in radianti
+        const k = amount;
+        const n = this._curveSamples;
+        const curve = this._curveBuffer;
+        const deg = Math.PI / 180;
+        const inv = 2 / n;
         
-        // Genera la curva di distorsione sample per sample
-        for (let i = 0; i < nSamples; i++) {
-            // Normalizza l'indice in range [-1, 1]
-            const x = (i * 2) / nSamples - 1;
-            
-            // Formula di distorsione: crea armoniche e saturazione soft
-            // La formula combina distorsione polinomiale con saturazione trigonometrica
-            curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+        for (let i = 0; i < n; i++) {
+            const x = i * inv - 1;
+            curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * (x < 0 ? -x : x));
         }
         
         return curve;
