@@ -13,13 +13,22 @@ web-kick/
 ├── app.js                  # Applicazione principale (orchestratore)
 ├── script-legacy.js        # Versione originale (backup)
 ├── modules/                # Moduli del sistema
-│   ├── audioEngine.js      # Motore audio
+│   ├── audioEngine.js      # Motore audio (contesto + analyser)
 │   ├── audioEffects.js     # Sistema di effetti
+│   ├── audioAnalysis.js    # Analisi real-time (bande, onset, RMS/centroid)
+│   ├── glRenderer.js       # Motore visivo WebGL2 (primario)
+│   ├── vfxRenderer.js      # Renderer Canvas 2D (fallback automatico)
 │   └── uiManager.js        # Gestione interfaccia utente
 ├── kick.mp3               # File audio
 ├── kick.jpg               # Immagine di sfondo
 └── README-modules.md      # Questa documentazione
 ```
+
+> **Nota:** dalla v1.0.5 il rendering visivo è gestito da `glRenderer.js`
+> (WebGL2 a fragment shader). `vfxRenderer.js` resta come fallback Canvas 2D
+> quando WebGL2 non è disponibile. `audioAnalysis.js` estrae le feature che
+> pilotano entrambi i renderer. Vedi il [README](README.md) per feature e
+> controlli VJ.
 
 ## Architettura Modulare
 
