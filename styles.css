@@ -289,6 +289,81 @@ html, body {
     user-select: none;
 }
 
+/* --- Beat-synced Brutalist Typography --- */
+.beat-type {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    z-index: 5;
+    pointer-events: none;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(60px, 18vw, 260px);
+    letter-spacing: -0.03em;
+    line-height: 0.8;
+    color: #fff;
+    mix-blend-mode: overlay;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    will-change: transform, opacity;
+    text-shadow:
+        4px 0 rgba(255, 0, 90, 0.9),
+        -4px 0 rgba(0, 220, 255, 0.9);
+}
+
+.beat-type.flash {
+    animation: beatFlash 0.42s cubic-bezier(0.12, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes beatFlash {
+    0% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--bt-x, 0)), calc(-50% + var(--bt-y, 0)))
+                   scale(calc(var(--bt-scale, 1) * 1.25));
+    }
+    12% {
+        opacity: 0.92;
+        transform: translate(calc(-50% + var(--bt-x, 0)), calc(-50% + var(--bt-y, 0)))
+                   scale(var(--bt-scale, 1));
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(calc(var(--bt-scale, 1) * 0.92));
+    }
+}
+
+/* --- VJ Status Readout --- */
+.vj-status {
+    position: fixed;
+    left: 50%;
+    bottom: 34px;
+    transform: translateX(-50%) translateY(8px);
+    z-index: 30;
+    pointer-events: none;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-accent-primary);
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--color-glass-border);
+    border-radius: 4px;
+    padding: 7px 14px;
+    white-space: nowrap;
+    opacity: 0;
+    text-shadow: var(--glow-primary);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.vj-status.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 /* --- Scanline Effect (CSS) — static, no animation to avoid compositing cost --- */
 .overlay::after {
     content: '';

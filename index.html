@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>MadKick — Procedural VFX Audiovisual Experience</title>
     <meta name="description" content="A mind-bending procedural VFX audiovisual experience driven by a 170 BPM kick drum with continuous modulation. Real-time frequency analysis meets generative art.">
+    <meta name="version" content="1.0.5">
     <link rel="stylesheet" href="styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,6 +17,12 @@
     <!-- VFX Canvas Layers -->
     <canvas id="vfxCanvas"></canvas>
     <canvas id="glitchCanvas"></canvas>
+
+    <!-- Beat-synced brutalist typography -->
+    <div id="beatType" class="beat-type" aria-hidden="true"></div>
+
+    <!-- Live VJ status readout -->
+    <div id="vjStatus" class="vj-status" aria-hidden="true"></div>
 
     <!-- Overlay UI -->
     <div id="overlay" class="overlay">
@@ -35,7 +42,7 @@
                 <div class="logo-ring ring-outer"></div>
                 <div class="logo-ring ring-middle"></div>
                 <div class="logo-ring ring-inner"></div>
-                <button id="playButton" class="play-btn" aria-label="Start Experience">
+                <button id="playButton" type="button" class="play-btn" aria-label="Start Experience">
                     <svg viewBox="0 0 100 100" class="play-icon">
                         <polygon points="30,20 30,80 80,50" fill="currentColor"/>
                     </svg>
