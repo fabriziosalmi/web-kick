@@ -11,9 +11,6 @@ import { VFXRenderer } from './modules/vfxRenderer.js';
 import { GLRenderer } from './modules/glRenderer.js';
 import { UIManager } from './modules/uiManager.js';
 
-// Beat-synced brutalist typography — flashed on kick onset
-const BEAT_WORDS = ['KICK', '170', 'RAVE', 'MADKICK', 'BASS', 'DROP', 'SUB', 'PSHH', 'BOOM', '///'];
-
 class MadKickApp {
     constructor() {
         this.audioEngine = new AudioEngine();
@@ -29,11 +26,6 @@ class MadKickApp {
         this.playButton = null;
         this.audioPlayer = null;
         this.hudCounter = 0;
-
-        // Beat typography
-        this.beatType = null;
-        this.beatWordIdx = 0;
-        this.beatClearTimer = null;
     }
 
     async initialize() {
@@ -44,7 +36,6 @@ class MadKickApp {
 
             const vfxCanvas = document.getElementById('vfxCanvas');
             const glitchCanvas = document.getElementById('glitchCanvas');
-            this.beatType = document.getElementById('beatType');
 
             // Prefer the WebGL2 fragment-shader engine; fall back to Canvas 2D.
             const gl = new GLRenderer();
@@ -79,9 +70,13 @@ class MadKickApp {
         if (!this.isAudioReady) await this.initializeAudioSystem();
         await this.audioEngine.play();
         this.isPlaying = true;
-        if (this.usingGL && !this._legendShown) {
-            this._legendShown = true;
-            this._showVJStatus('VJ · 1 TUNNEL · 2 ACID · 3 MOSH · 4 LASER · 5 STROBE · P/0 PALETTE');
+        if (this.usingGL) {
+            // Deterministic multi-impact intro on the very first play
+            if (!this._introFired) { this._introFired = true; this.vfxRenderer.startIntro(); }
+            if (!this._legendShown) {
+                this._legendShown = true;
+                this._showVJStatus('VJ · 1 TUNNEL · 2 ACID · 3 MOSH · 4 LASER · 5 STROBE · 6 FISHEYE · P/0 PALETTE');
+            }
         }
     }
 
@@ -126,9 +121,6 @@ class MadKickApp {
         
         this.vfxRenderer.updateAudioData(data);
 
-        // Beat-synced typography — flash a word on strong kicks
-        if (data.onset && data.onsetStrength > 0.45) this._flashBeatType(data.onsetStrength);
-
         this.hudCounter++;
         if (this.hudCounter >= 10) {
             this.uiManager.updateHUD(data);
@@ -146,6 +138,7 @@ class MadKickApp {
             '3': () => r.toggleDatamosh(),
             '4': () => r.toggleLaser(),
             '5': () => r.toggleStrobe(),
+            '6': () => r.toggleFisheye(),
             'p': () => r.cyclePalette(),
             '0': () => r.togglePaletteAuto(),
         };
@@ -165,24 +158,6 @@ class MadKickApp {
         el.classList.add('show');
         clearTimeout(this._vjStatusTimer);
         this._vjStatusTimer = setTimeout(() => el.classList.remove('show'), 1400);
-    }
-
-    _flashBeatType(strength) {
-        const el = this.beatType;
-        if (!el) return;
-        this.beatWordIdx = (this.beatWordIdx + 1) % BEAT_WORDS.length;
-        el.textContent = BEAT_WORDS[this.beatWordIdx];
-        // random slight offset + scale for kinetic feel
-        const ox = (Math.random() - 0.5) * 8;
-        const oy = (Math.random() - 0.5) * 8;
-        const sc = 0.85 + strength * 0.5;
-        el.style.setProperty('--bt-x', ox + 'vw');
-        el.style.setProperty('--bt-y', oy + 'vh');
-        el.style.setProperty('--bt-scale', sc);
-        // restart the CSS animation
-        el.classList.remove('flash');
-        void el.offsetWidth; // force reflow
-        el.classList.add('flash');
     }
 
     setupAudioEventListeners() {

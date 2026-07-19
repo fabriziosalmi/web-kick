@@ -45,6 +45,8 @@ uniform float uMode;       // 0 = feedback tunnel, 1 = acid SDF raymarch
 uniform float uPalIdx;     // palette-lock selector (snaps on drops)
 uniform float uLaser;      // laser beams on/off
 uniform float uDatamosh;   // block glitch on/off
+uniform float uShockR;     // expanding shockwave radius
+uniform float uShockI;     // shockwave intensity
 uniform sampler2D uPrev;   // previous frame (feedback)
 uniform sampler2D uFreq;   // 256x1 spectrum
 uniform sampler2D uWave;   // 256x1 waveform
@@ -167,6 +169,13 @@ void main(){
     col += palette(0.02 + uBeat * 0.05, uPalIdx) * beam * uHigh * (1.5 + uFlash * 3.0);
   }
 
+  // ============ SHOCKWAVE RING (impacts / intro) ============
+  if (uShockI > 0.001){
+    float ring = smoothstep(0.06, 0.0, abs(rad - uShockR)) * uShockI;
+    col += palette(0.1 + uBeat * 0.05, uPalIdx) * ring * 2.2;
+    col += vec3(1.0) * ring * uShockI * 0.6;   // white leading edge
+  }
+
   // ============ COMBINE ============
   vec3 outc = prev + col;
 
@@ -215,6 +224,7 @@ uniform sampler2D uBloom;
 uniform vec2  uRes;
 uniform float uTime;
 uniform float uFlash, uRms, uOnset;
+uniform float uFisheye;  // 0..1 intelligent lens distortion, gated to drops
 uniform vec3  uStrobe;   // full-frame RGB strobe, gated to strong kicks
 
 float hash21(vec2 p){
@@ -223,20 +233,34 @@ float hash21(vec2 p){
   return fract(p.x * p.y);
 }
 
+mat2 rot(float a){ float c = cos(a), s = sin(a); return mat2(c, -s, s, c); }
+
 void main(){
   vec2 uv = vUv;
   vec2 d = uv - 0.5;
-  float r2 = dot(d, d);
+  float r = length(d);
+  float r2 = r * r;
 
-  // barrel-ish chromatic aberration, stronger on kicks + toward edges
-  float ca = (0.0025 + uFlash * 0.012) * (0.4 + r2 * 2.5);
+  // === Intelligent fisheye: sharp center, distorted radials toward edges, zoom pump ===
+  vec2 suv = uv;
+  if (uFisheye > 0.001){
+    float pump = 0.6 + 0.4 * sin(uTime * 6.0);              // zooming throb
+    float bar = 1.0 + uFisheye * pump * r2 * 2.0 - uFisheye * 0.12;
+    vec2 fc = d * bar;
+    float sw = uFisheye * 0.35 * smoothstep(0.0, 0.65, r);  // twist the radials
+    fc = rot(sw) * fc;
+    suv = 0.5 + fc;
+  }
+
+  // barrel-ish chromatic aberration, stronger on kicks + fisheye + toward edges
+  float ca = (0.0025 + uFlash * 0.012 + uFisheye * 0.02) * (0.4 + r2 * 2.5);
   vec2 dir = normalize(d + 1e-5);
   vec3 scene;
-  scene.r = texture(uScene, uv - dir * ca).r;
-  scene.g = texture(uScene, uv).g;
-  scene.b = texture(uScene, uv + dir * ca).b;
+  scene.r = texture(uScene, suv - dir * ca).r;
+  scene.g = texture(uScene, suv).g;
+  scene.b = texture(uScene, suv + dir * ca).b;
 
-  vec3 bloom = texture(uBloom, uv).rgb;
+  vec3 bloom = texture(uBloom, suv).rgb;
   vec3 col = scene + bloom * (1.1 + uRms * 0.8);
 
   // horizontal scanline tear on strong kicks
@@ -250,8 +274,9 @@ void main(){
   // film grain
   col += (hash21(gl_FragCoord.xy + uTime * 60.0) - 0.5) * 0.045;
 
-  // vignette
+  // vignette (tightens toward center when the fisheye engages → central focus)
   col *= smoothstep(0.95, 0.25, r2);
+  col *= 1.0 - uFisheye * 0.35 * smoothstep(0.2, 0.85, r);
 
   // full-frame RGB strobe on the hardest kicks
   col += uStrobe;
@@ -300,6 +325,24 @@ export class GLRenderer {
     this.paletteAuto = 1;   // auto palette-lock changes on drops
     this.palIdx = 0;        // current palette selector (smoothed toward target)
     this.palTarget = 0;     // target palette selector
+
+    // Intelligent fisheye — only engages on drops/builds and hard kicks
+    this.fisheyeAuto = 1;
+    this.fisheye = 0;       // 0..1 current distortion amount
+    this.energySlow = 0;    // slow RMS baseline for drop detection
+
+    // Expanding shockwave ring (impacts)
+    this.shockR = 0;        // current radius
+    this.shockI = 0;        // current intensity (decays)
+
+    // Deterministic intro choreography (runs on first play, audio-independent)
+    this.introTime = -1;    // <0 = inactive
+    this.introIdx = 0;
+    // Accelerating hits building into a drop at ~2.9s. [time, strength]
+    this.introHits = [
+      [0.00, 1.00], [0.70, 0.45], [1.25, 0.55], [1.70, 0.65],
+      [2.05, 0.72], [2.35, 0.80], [2.58, 0.88], [2.76, 0.94], [2.90, 1.00],
+    ];
 
     // GL objects
     this.programs = {};
@@ -491,7 +534,10 @@ export class GLRenderer {
     if (this.onFrame) this.onFrame(this.dt);   // audio analysis runs here
 
     this._adaptQuality();
+    this._updateIntro();
     this._updateBeat();
+    this._updateFisheye();
+    this._updateShock();
     this._uploadAudioTextures();
     this._render();
 
@@ -521,11 +567,60 @@ export class GLRenderer {
     this.palIdx += (this.palTarget - this.palIdx) * 0.30;
   }
 
+  // Fire one deterministic impact (reuses flash / strobe / shockwave / fisheye)
+  _impact(s) {
+    this.flash = Math.max(this.flash, s);
+    this.shockR = 0.02;
+    this.shockI = Math.max(this.shockI, s);
+    this.fisheye = Math.max(this.fisheye, s * 0.7);
+    if (s > 0.6) {
+      const cols = [[1, 1, 1], [0.2, 1, 1], [1, 0.2, 0.9]];
+      const c = cols[this.introIdx % 3];
+      const a = (s - 0.6) * 0.7;
+      this.strobe[0] = c[0] * a; this.strobe[1] = c[1] * a; this.strobe[2] = c[2] * a;
+    }
+  }
+
+  // Deterministic intro — start on first play, always identical
+  startIntro() { this.introTime = 0; this.introIdx = 0; }
+
+  _updateIntro() {
+    if (this.introTime < 0) return;
+    this.introTime += this.dt;
+    const hits = this.introHits;
+    while (this.introIdx < hits.length && this.introTime >= hits[this.introIdx][0]) {
+      this._impact(hits[this.introIdx][1]);
+      this.introIdx++;
+    }
+    if (this.introTime > 3.4) this.introTime = -1; // done
+  }
+
+  _updateFisheye() {
+    if (!this.fisheyeAuto) { this.fisheye += (0 - this.fisheye) * 0.1; return; }
+    const a = this.audio;
+    const rms = a ? (a.rmsEnvelope || 0) : 0;
+    const sub = a && a.bands ? (a.bands.subBass || 0) : 0;
+    this.energySlow += (rms - this.energySlow) * 0.02;      // slow baseline
+    const drop = Math.max(0, rms - this.energySlow - 0.10) * 3.5; // sustained-energy surge
+    let target = Math.min(1, drop + sub * 0.35);
+    if (a && a.onset && a.onsetStrength > 0.85) target = Math.max(target, 0.6);
+    const k = target > this.fisheye ? 0.22 : 0.05;          // fast in, slow out
+    this.fisheye += (target - this.fisheye) * k;
+  }
+
+  _updateShock() {
+    if (this.shockI <= 0.001) { this.shockI = 0; return; }
+    this.shockR += this.dt * 2.6;         // expand outward
+    this.shockI *= 0.90;                  // fade
+    if (this.shockR > 1.7) this.shockI = 0;
+  }
+
   // === VJ control API (driven by keyboard in app.js) ===
   setMode(m) { this.mode = m ? 1 : 0; return this.mode ? 'ACID RAYMARCH' : 'FEEDBACK TUNNEL'; }
   toggleDatamosh() { this.datamoshOn ^= 1; return 'DATAMOSH ' + (this.datamoshOn ? 'ON' : 'OFF'); }
   toggleLaser() { this.laserOn ^= 1; return 'LASERS ' + (this.laserOn ? 'ON' : 'OFF'); }
   toggleStrobe() { this.strobeOn ^= 1; return 'STROBE ' + (this.strobeOn ? 'ON' : 'OFF'); }
+  toggleFisheye() { this.fisheyeAuto ^= 1; return 'FISHEYE ' + (this.fisheyeAuto ? 'AUTO' : 'OFF'); }
   cyclePalette() { this.palTarget += 0.31; return 'PALETTE SHIFT'; }
   togglePaletteAuto() { this.paletteAuto ^= 1; return 'PALETTE-LOCK ' + (this.paletteAuto ? 'AUTO' : 'FROZEN'); }
 
@@ -564,6 +659,8 @@ export class GLRenderer {
     gl.uniform1f(this._u(prog, 'uPalIdx'), this.palIdx);
     gl.uniform1f(this._u(prog, 'uLaser'), this.laserOn);
     gl.uniform1f(this._u(prog, 'uDatamosh'), this.datamoshOn);
+    gl.uniform1f(this._u(prog, 'uShockR'), this.shockR);
+    gl.uniform1f(this._u(prog, 'uShockI'), this.shockI);
   }
 
   _drawTo(fbo) {
@@ -631,6 +728,7 @@ export class GLRenderer {
     gl.uniform1f(this._u(cp, 'uFlash'), this.flash);
     gl.uniform1f(this._u(cp, 'uRms'), this.audio ? (this.audio.rmsEnvelope || 0) : 0);
     gl.uniform1f(this._u(cp, 'uOnset'), this.audio && this.audio.onset ? 1 : 0);
+    gl.uniform1f(this._u(cp, 'uFisheye'), this.fisheye);
     gl.uniform3f(this._u(cp, 'uStrobe'), this.strobe[0], this.strobe[1], this.strobe[2]);
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, scene.tex);
     gl.uniform1i(this._u(cp, 'uScene'), 0);
