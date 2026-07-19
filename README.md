@@ -4,8 +4,6 @@ MADKICK is a browser-based audiovisual experience: an endlessly evolving **170 B
 
 ## 🔈 [Kick it now!](https://fabriziosalmi.github.io/web-kick/)
 
-![screenshot](https://github.com/fabriziosalmi/web-kick/blob/main/screenshot.jpg?raw=true)
-
 ## ✨ What it does
 
 - **Endless evolving kick** — a 170 BPM loop pushed through a modulated chain (dynamic low-pass, waveshaper distortion, LFO-driven low-shelf EQ, feedback delay, compressor) so it never sounds twice the same.
