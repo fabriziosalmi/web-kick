@@ -1,8 +1,8 @@
 # Static analysis for AI-slop patterns: https://github.com/fabriziosalmi/slopless
 #
-# Trial run. Findings are reported to the Security tab and do NOT fail the build,
-# so this cannot block work while we see whether the rules earn their place here.
-# Once the noise is triaged, drop `continue-on-error` to make errors blocking.
+# Errors fail the build. Warnings are reported to the Security tab and do not,
+# which is what makes them safe to leave on. Run `slopless --min-severity error`
+# locally to see exactly what would block.
 name: slopless
 
 on:
@@ -26,7 +26,6 @@ jobs:
       # upstream repository not to change under us.
       - name: Run slopless
         id: slopless
-        continue-on-error: true
         uses: fabriziosalmi/slopless@a71e5a179a3ecf40da9d91c361e2abed7c69945a # v1.4.3
         with:
           patterns: "**/*.js **/*.md **/*.css **/*.html"
