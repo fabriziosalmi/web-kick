@@ -1,0 +1,49 @@
+# Static analysis for AI-slop patterns: https://github.com/fabriziosalmi/slopless
+#
+# Trial run. Findings are reported to the Security tab and do NOT fail the build,
+# so this cannot block work while we see whether the rules earn their place here.
+# Once the noise is triaged, drop `continue-on-error` to make errors blocking.
+name: slopless
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyse:
+    name: AI-slop static analysis
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      # Pinned to a commit rather than @v1: a moving tag means trusting the
+      # upstream repository not to change under us.
+      - name: Run slopless
+        id: slopless
+        continue-on-error: true
+        uses: fabriziosalmi/slopless@7d2beff1706bc9590ebccc32094a867cedf1dbe6 # main, 2026-09-01
+        with:
+          patterns: "**/*.js **/*.md **/*.css **/*.html"
+          format: sarif
+          output: slopless.sarif
+
+      # A pull request from a fork gets a read-only token whatever `permissions:`
+      # says, so the upload would 403 and fail the job. Skipping it there keeps
+      # the promise above true, and `continue-on-error` covers anything else.
+      - name: Upload findings to code scanning
+        if: >-
+          always()
+          && hashFiles('slopless.sarif') != ''
+          && (github.event_name != 'pull_request'
+              || github.event.pull_request.head.repo.full_name == github.repository)
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@6f5948dfacef28e207b48d0905cf90c03365536d # v3.37.9
+        with:
+          sarif_file: slopless.sarif
+          category: slopless
