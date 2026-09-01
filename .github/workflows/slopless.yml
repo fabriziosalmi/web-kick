@@ -27,7 +27,7 @@ jobs:
       - name: Run slopless
         id: slopless
         continue-on-error: true
-        uses: fabriziosalmi/slopless@7d2beff1706bc9590ebccc32094a867cedf1dbe6 # main, 2026-09-01
+        uses: fabriziosalmi/slopless@a9177f6333d731ec620d786638cf26639708b606 # v1.2.2
         with:
           patterns: "**/*.js **/*.md **/*.css **/*.html"
           format: sarif
